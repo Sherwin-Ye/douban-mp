@@ -3,12 +3,14 @@ let utils = require("../../../utils/utils");
 let app = getApp();
 Page({
     data: {
-        movie: {}
+        movie: {},
+        showOrHide: "hidden"
     },
     onLoad(options) {
         let movieId = options.mid;
         let requestUrl = app.globalData.BASEPATH + "v2/movie/subject/" + movieId;
         utils.http(requestUrl, this.processDoubanData);
+        wx.showNavigationBarLoading();
     },
     processDoubanData(data) {
         if(!data){
@@ -44,8 +46,10 @@ Page({
             summary: data.summary
         }
         this.setData({
-            movie: movie
+            movie: movie,
+            showOrHide: "visible"
         })
+        wx.hideNavigationBarLoading();
     },
     viewMoviePostImg: function (e) {
         var src = e.currentTarget.dataset.src;

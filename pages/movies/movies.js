@@ -5,7 +5,8 @@ Page({
         containerShow: true,
         searchPanelShow: false,
         closeImgShow: false,
-        searchMovies: {}
+        searchMovies: {},
+        showOrHide: "hidden"
     },
     onLoad(e) {
         let inTheaters = app.globalData.BASEPATH + "v2/movie/in_theaters?count=3",
@@ -42,7 +43,8 @@ Page({
             [setKey]: {
                 slogan: slogans,
                 movies: movie
-            }
+            },
+            showOrHide: "visible"
         });
         wx.hideNavigationBarLoading();
     },

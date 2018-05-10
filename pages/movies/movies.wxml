@@ -1,23 +1,23 @@
 <import src="movie-list/movie-list-template.wxml" />
 <import src="movie-grid/movie-grid.wxml" />
- <view class="search">
-    <icon type="search" class="search-img" size="14" color="#405f80" />
-    <input type="text" placeholder='唐人街探案2' 
-        placeholder-class='placeholader' bindfocus="onBindFocus"
-        bindconfirm="onSearch" />
-    <icon type="clear" class="clear-img" size="14" color="#405f80" catchtap='recover' wx-if="{{closeImgShow}}" />
-</view> 
-<view class="container" wx-if="{{containerShow}}">
-    <view class="movie-template">
-        <template is="movieListTemplate" data="{{...inTheaters}}" />
+<view style='visibility: {{showOrHide}}'>
+    <view class="search">
+        <icon type="search" class="search-img" size="14" color="#405f80" />
+        <input type="text" placeholder='唐人街探案2' placeholder-class='placeholader' bindfocus="onBindFocus" bindconfirm="onSearch" />
+        <icon type="clear" class="clear-img" size="14" color="#405f80" catchtap='recover' wx-if="{{closeImgShow}}" />
     </view>
-    <view class="movie-template">
-        <template is="movieListTemplate" data="{{...comeingSoon}}" />
+    <view class="container" wx-if="{{containerShow}}">
+        <view class="movie-template">
+            <template is="movieListTemplate" data="{{...inTheaters}}" />
+        </view>
+        <view class="movie-template">
+            <template is="movieListTemplate" data="{{...comeingSoon}}" />
+        </view>
+        <view class="movie-template">
+            <template is="movieListTemplate" data="{{...top250}}" />
+        </view>
     </view>
-    <view class="movie-template">
-        <template is="movieListTemplate" data="{{...top250}}" />
+    <view class='search-panel' wx-if="{{searchPanelShow}}">
+        <template is="movieGridTemplate" data="{{...searchMovies}}"></template>
     </view>
 </view>
- <view class='search-panel' wx-if="{{searchPanelShow}}">
-    <template is="movieGridTemplate" data="{{...searchMovies}}"></template>
-</view> 
