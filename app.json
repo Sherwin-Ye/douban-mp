@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/movies/movies",
+    "pages/talk/talk",
+    "pages/talk-details/talk-details",
+    "pages/movies/more-movie/more-movie"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#d4d4d4"
+  },
+  "tabBar": {
+    "color": "#fff",
+    "selectedColor": "#87ceeb",
+    "borderStyle": "black",
+    "backgroundColor": "#2c2e3b",
+    "list": [{
+      "pagePath": "pages/talk/talk",
+      "text": "阅读",
+      "iconPath": "/images/tab/yuedu.png",
+      "selectedIconPath": "/images/tab/yuedu_hl.png"
+    },{
+      "pagePath": "pages/movies/movies",
+      "text": "电影",
+      "iconPath": "/images/tab/dianying.png",
+      "selectedIconPath": "/images/tab/dianying_hl.png"
+    }]
+  }
+}
