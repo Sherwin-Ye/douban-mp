@@ -36,6 +36,14 @@ Page({
               isPlaying: false
           })
       })
+      // 监听音乐停止，图标初始化
+      wx.onBackgroundAudioStop(function(){
+          that.setData({
+              isPlaying: false
+          })
+          app.globalData.ISPLAYING = false;
+          app.globalData.MUSICID = null;
+      })
   },
   collect(event) {
     let id = event.currentTarget.dataset.id;

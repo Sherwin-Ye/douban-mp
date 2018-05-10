@@ -1,339 +1,135 @@
-# 微信小程序入门级教程-11
+# 微信小程序入门级教程-12
 
 > 前言
 
-&emsp;&emsp;上节课中我们讲了如何通过调用接口获取真实数据，那么这节课我们就要开始制作更多页面了，因为上节课，更多这个功能我们是没有做的，效果如下：
-
-![效果图](https://upload-images.jianshu.io/upload_images/8919399-26a19a86d20b804b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+&emsp;&emsp;昨天我们讲解了更多页面和其功能的实现，说的有点笼统，不过大致方向和代码都已经基本提供了，所以希望大家还是没懂的就多理解理解，练习练习，今天呢，我们就开始讲解电影页面的搜索功能！
 
 > 目录
 
 https://www.jianshu.com/p/9c9b555b52e8
 
-> 步骤
+> 分析操作
 
-1. 首先我们在`movies`目录下创建更多页面`more-movie`和`movie-grid`文件夹，然后创建四大件：`~.wxml，~.wxss，~.js，~.json`。
+1. 搜索框获取焦点后，自动弹出搜索页面，隐藏掉原有页面，并且搜索框右边出现关闭搜索的按钮。
+2. 点击关闭按钮，页面初始化，关闭按钮也随之消失
 
-结果如下：
+具体操作效果：
+![交互效果](https://upload-images.jianshu.io/upload_images/8919399-5ff19eca27001b5b.gif?imageMogr2/auto-orient/strip)
 
-![更多页面结构图](https://upload-images.jianshu.io/upload_images/8919399-5af8f3c88b399ac5.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-2. 我们用`movie-grid.wxml`来封装电影信息，然后在`more-movie.wxml`页面中，我们只需要引入该模板就行了，如下所示：
-`movie-grid.wxml`
-```html
-<!--pages/movies/movie-grid/movie-grid.wxml-->
-<import src="../movie/movie-template.wxml" />
-<template name="movieGridTemplate">
-    <view class="grid-container">
-        <block wx:for="{{movies}}" wx:for-item="movie">
-            <view class="single-grid-container">
-                <template is="movieTemplate" data="{{...movie}}" />
-            </view>
-        </block>
-    </view>
-</template>
-```
+> 实现步骤
 
-`movie-grid.wxss`
-```css
-/* pages/movies/movie-grid/movie-grid.wxss */
-@import "../movie/movie-template.wxss";
-.grid-container{
-    
-}
-.single-grid-container{
-    float: left;
-    margin: 20rpx 0 20rpx 6rpx;
-}
-```
+1.电影页面顶部新增一个搜索栏，对于搜索栏中的搜索图标和关闭图标，有很多种办法可以解决，例如图片，又或者iconfont，又或者小程序自身的icon图标，方法有很多，怎么实现，看自己考虑了。我们这里就采取最简单的方法，直接使用小程序自身的icon，具体使用如下：
 
-封装好了这个电影内容的组件后，我们在`more-movie`中直接引入即可，如下：
+|属性名|类型|默认值|说明|
+|:---|:---|:---|:---|
+|type|String||有效值：success, success_no_circle, info, warn, waiting, cancel, download, search, clear|
+|size|Number|23|icon的大小，单位px
+|color|Color||icon的颜色，同css的color
 
-```html
-<!--pages/movies/more-movie/more-movie.wxml-->
-<import src="../movie-grid/movie-grid.wxml" />
-<template is="movieGridTemplate" />
-```
-接下来就是引入模板的样式了，如下：
-```css
-/* pages/movies/more-movie/more-movie.wxss */
-@import "../movie-grid/movie-grid.wxss";
-```
+举例：
 
-3.页面搭建完毕后，我们就需要分析一下如下问题：
-
-* 我们需要哪个板块的内容信息？[正在热映， 即将上映， top250]  
-* 页面标题需要动态的展示是哪个板块？[正在热映， 即将上映， top250]
-
-分析的差不多了，剩下的就是一个个解决如上问题了，接下来就开始一步一步跟着我走吧！
-
-4. 如何获取我们需要那个板块的电影信息？
-
-分析：在`movies.js`中，我们在`onLoad`函数中调用了三次请求数据，而我们需要做的就是手动添加对应的标题到请求函数中，如下所示：
-```javascript
-onLoad(e) {
-  let inTheaters = app.globalData.BASEPATH + "v2/movie/in_theaters",
-  comeingSoon = app.globalData.BASEPATH + "v2/movie/coming_soon",
-  top250 = app.globalData.BASEPATH + "v2/movie/top250";
-  // 手动赋予对应请求的标题
-  this.getData(inTheaters, "inTheaters", "正在热映");
-  this.getData(comeingSoon, "comeingSoon", "即将上映");
-  this.getData(top250, "top250", "TOP250");
-}，
-getData(url, setKey, slogans) {
-  let that = this;
-  wx.request({
-    url: url,
-    data: { count: 3 },
-    header: { "Content-Type": "json" },
-    success(res) {
-      // 将标题传入处理电影信息的方法中
-      that.processDoubanData(res.data.subjects, setKey, slogans);
-    }
-  });
-},
-processDoubanData(data, setKey, slogans) {
-  let that = this;
-  let movie = [];
-  for (let subject of data) {
-    let temp = {}
-    temp.title = subject.title;
-    temp.average = subject.rating.average.toFixed(1);
-    temp.coverageUrl = subject.images.large;
-    temp.movieId = subject.id;
-    temp.stars = util.converToStarsArray(subject.rating.stars);
-    movie.push(temp);
-  }
-  this.setData({
-    [setKey]: {
-      // 将标题传入处理电影信息对象中
-      slogan: slogans,
-      movies: movie
-    }
-  });
-}
-```
-然后我们在`movie-list-template.wxml`中绑定上我们传过去的`slogan`值！
-```html
-<import src="../movie/movie-template.wxml" />
-<template name="movieListTemplate">
-    <view class="movie-list-container">
-        <div class="inner-container">
-                <view class="movie-head">
-                <text class="slogan">{{slogan}}</text>
-                // 给更多这个容器绑定上slogan，这样子我们就可以在点击更多后，在新页面得到这个值
-                <view class="more" catchtap='onMoreTap' data-categroy="{{slogan}}">
-                    <text class="more-text">更多</text>
-                    <image class="more-img" src="/images/icon/arrow-right.png"></image>
-                </view>
-            </view>    
-            <view class="movies-container">
-                <block wx:for="{{movies}}" wx:for-item="movie">
-                    <template is="movieTemplate" data="{{...movie}}" />
-                </block>
-            </view>
-        </div>
-    </view>
-</template>
-```
-
-接下来我们就在更多那个页面来获取这值，并且展示：
-`more-movie.js`
-```javascript
-onLoad(options) {
-  // 获取点击更多传过来的我们绑定的标题slogan值
-  let [that, categroy] = [this, options.categroy];
-  this.data.barTitle = categroy;
-},
-onReady(event) {
-  let that = this;
-  // 设置导航标题
-  wx.setNavigationBarTitle({
-    title: that.data.barTitle
-  })
-}
-```
-
-5. 获取对应数据
-
-&emsp;&emsp;我们在小程序中获取电影的次数有点多，所以我们在之前创建的`utils.js`中新创建一个函数，专门用来封装请求数据的方法，具体如下：
-```javascript
-function http(url, callBack) {
-    let that = this;
-    wx.request({
-        url: url,
-        header: { "Content-Type": "json" },
-        success(res) {
-            // 切记把值传给一个回调函数
-            callBack(res.data);
-        },
-        fail(err){
-            console.log(err)
-        }
-    });
-}
-```
-
-在上面我们得到了本页的标题，所以我们可以根据这个标题来知道我们应该请求那个接口，如下所示：
-```javascript
-onLoad(options) {
-  let [that, categroy] = [this, options.categroy];
-  this.data.barTitle = categroy;
-  // 定义一个接口路径的变量
-  let interfaceUrl = null;
-  // 根据标题判断请求路径
-  switch (categroy) {
-    case "正在热映":
-      interfaceUrl = app.globalData.BASEPATH + "v2/movie/in_theaters";
-      utils.http(interfaceUrl, that.precessDoubanData);
-      break;
-    case "即将上映":
-      interfaceUrl = app.globalData.BASEPATH + "v2/movie/coming_soon";
-      utils.http(interfaceUrl, that.precessDoubanData);
-      break;
-    default:
-      interfaceUrl = app.globalData.BASEPATH + "v2/movie/top250";
-      utils.http(interfaceUrl, that.precessDoubanData);
-  }
-  // 保存当前页面的数据请求地址，方便其他函数使用
-  this.data.requestUrl = interfaceUrl;
-},
-precessDoubanData(data){
-  let movie = [];
-  for (let subject of data.subjects) {
-    let temp = {}
-    temp.title = subject.title;
-    temp.average = subject.rating.average.toFixed(1);
-    temp.coverageUrl = subject.images.large;
-    temp.movieId = subject.id;
-    temp.stars = utils.converToStarsArray(subject.rating.stars);
-    movie.push(temp);
-  }
-  this.setData({
-    movies: movie 
-  })
-}
-```
-
-接下来开始在模板页面`more-movie.wxml`中给template绑定上我们的值：
 ```wxml
-<!--pages/movies/more-movie/more-movie.wxml-->
-<import src="../movie-grid/movie-grid.wxml" />
-<template is="movieGridTemplate" data="{{movies}}" />
-
+<icon type="success" size="40" color="#f00"/>
 ```
-
-最终，我们来查看一下效果：
-
-
-![image.png](https://upload-images.jianshu.io/upload_images/8919399-ccd866fc924e8634.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
-
-若有什么地方不一样的，可以自己修改一下样式表。
-
-6. 上拉刷新和下拉加载
-
-&emsp;&emsp;解析：上拉刷新原理就是在`movies.js`中记录总共请求的电影数量，然后执行刷新的时候，传入count=电影总数即可，下拉加载呢，就是每次请求的起点是目前请求的总数，而一次加载的数量自己决定，在这里，我以20条一次为例，具体代码如下：
-
-###### 注意： 如果需要下拉刷新的页面，一定要在其json文件中声明，如下所示：
-```json
-{
-    "navigationBarBackgroundColor": "#2c2e3b",\
-    // 下拉的配置
-    "enablePullDownRefresh": true
-}
-```
-
 ```javascript
-// pages/movies/more-movie/more-movie.js
-let utils = require("../../../utils/utils");
-let app = getApp();
 Page({
-    data: {
-        movies: [],
-        totalCount: 0
-    },
-    /**
-     * 生命周期函数--监听页面加载
-     */
-    onLoad(options) {
-        let [that, categroy] = [this, options.categroy];
-        this.data.barTitle = categroy;
-        let interfaceUrl = null;
-        switch (categroy) {
-            case "正在热映":
-                interfaceUrl = app.globalData.BASEPATH + "v2/movie/in_theaters";
-                utils.http(interfaceUrl, that.precessDoubanData);
-                break;
-            case "即将上映":
-                interfaceUrl = app.globalData.BASEPATH + "v2/movie/coming_soon";
-                utils.http(interfaceUrl, that.precessDoubanData);
-                break;
-            default:
-                interfaceUrl = app.globalData.BASEPATH + "v2/movie/top250";
-                utils.http(interfaceUrl, that.precessDoubanData);
-        }
-        // 保存当前页面的数据请求地址，方便其他函数使用
-        this.data.requestUrl = interfaceUrl;
-    },
-    onReady(event) {
-        let that = this;
-        wx.setNavigationBarTitle({
-            title: that.data.barTitle
-        })
-    },
-    precessDoubanData(data){
-        let movie = [];
-        for (let subject of data.subjects) {
-            let temp = {}
-            temp.title = subject.title;
-            temp.average = subject.rating.average.toFixed(1);
-            temp.coverageUrl = subject.images.large;
-            temp.movieId = subject.id;
-            temp.stars = utils.converToStarsArray(subject.rating.stars);
-            movie.push(temp);
-        }
-        let moviesList = this.data.movies.concat(movie);
-        this.setData({
-            movies: moviesList
-        })
-        wx.hideNavigationBarLoading();
-        // 保存当前电影总共条数，方便下拉加载使用
-        this.data.totalCount += 20;
-        // 去除下拉Loding
-        wx.stopPullDownRefresh();
-    },
-    onPullDownRefresh(e){
-        this.data.movies = [];
-        let requestUrl = this.data.requestUrl + "?count=" + this.data.totalCount;
-        utils.http(requestUrl, this.precessDoubanData);
-        // 因为请求数据，就会自增20，所以我们在这里减去这20就可以达到我们想要的数据条数了
-        this.data.totalCount -= 20;
-    },
-    onReachBottom(e){
-        // 开启下拉加载时页面顶部的加载动效
-        wx.showNavigationBarLoading();
-        let requestUrl = this.data.requestUrl + "?start=" + this.data.totalCount + "&count=20";
-        utils.http(requestUrl, this.precessDoubanData);
-    }
+  data: {
+    iconSize: [20, 30, 40, 50, 60, 70],
+    iconColor: [
+      'red', 'orange', 'yellow', 'green', 
+      'rgb(0,255,255)', 'blue', 'purple'
+    ],
+    iconType: [
+      'success', 'success_no_circle', 'info', 'warn', 
+      'waiting', 'cancel', 'download', 'search', 'clear'
+    ]
+  }
 })
 ```
-这个时候我们的下拉刷新和上拉加载就完成了，效果如下：
+![微信API例子](https://upload-images.jianshu.io/upload_images/8919399-21662caffd1a86c8.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-![上拉刷新](https://upload-images.jianshu.io/upload_images/8919399-a0604eaaa46fdd98.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
-![下拉加载](https://upload-images.jianshu.io/upload_images/8919399-ffee82b058beaad6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+2.在这里我们就开始修改`movies.wxml`文件在`.container`上方新增`view`，具体代码如下:
+```html
+ <view class="search">
+    <icon type="search" class="search-img" size="14" color="#405f80" />
+    <input type="text" placeholder='唐人街探案2' 
+        placeholder-class='placeholader' bindfocus="onBindFocus"
+        bindconfirm="onSearch" />
+    // 初始化的时候将关闭按钮隐藏掉
+    // 在movies.js中定义一个变量closeImgShow，赋值false
+    <icon type="clear" class="clear-img" size="14" 
+      color="#405f80" catchtap='recover' wx-if="{{closeImgShow}}" />
+</view> 
+// 关于input的属性就自己去看API文档吧，这里不多说这个东西了
+```
 
+效果如下：
+![搜索框](https://upload-images.jianshu.io/upload_images/8919399-e26e41fe020685dc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+3.继续写我们搜索的结果页面，这里我们就不用重新写页面了，因为搜索结果页面无非也是`grid`模板的内容，所以这里我们继续使用`grid`模板，所以我们直接在`movies.wxml`页面最下部新增一个`view`，具体代码如下：
+```html
+// 初始化页面的时候，搜索页面时隐藏的
+// 所以在movies.js中新增一个变量searchPanelShow， 赋值false
+<view class='search-panel' wx-if="{{searchPanelShow}}">
+    <template is="movieGridTemplate"></template>
+</view> 
+```
+
+4.开始写功能部分
+
+我们在上面可以看到，我们给输入框加了两个事件,一个是获取焦点的事件，我们刚才已经用来实现页面的隐藏和显示了，那么解下来的`confirm`呢？就是关于输入框输入内容后的点击完成事件，当然了，回车也是可以的，那么我们先在`movies.js`中写出这个函数再说，顺便通过`event.detail.value`来获取输入框的值：
+```javascript
+onSearch(e){
+  // 获取输入框的值
+  let val = e.detail.value; 
+  // 通过api接口传入这个值进行搜索
+  let searchUrl = app.globalData.BASEPATH + "v2/movie/search?q=" + val;
+  // 使用调用接口后的处理方法，把搜索结果赋值给变量searchMovies
+  this.getData(searchUrl,'searchMovies','');
+}
+```
+
+在上面我们得到了搜索结果的一个变量，那么接下来就是在页面中填充这个值:
+
+```wxml
+ <view class='search-panel' wx-if="{{searchPanelShow}}">
+    <template is="movieGridTemplate" data="{{...searchMovies}}"></template>
+</view> 
+```
+
+###### 注意：
+
+* 如果这里搜索出来只有三条数据，那么请把`movies.js`中的`getData`函数中传入的count=3删除，为了保持原有效果不变，可以在`onLoad`函数中，把初始化页面的三次请求路径后面，直接以问号传参的方式传入count=3
+
+* 如果页面中样式有问题，请在`movies.wxss`中引入我们使用grid模板的样式文件即可。
+
+搜索效果：![搜索效果](https://upload-images.jianshu.io/upload_images/8919399-0ebe2f1b67179436.gif?imageMogr2/auto-orient/strip)
+
+###### 优化：
+
+&emsp;&emsp;在这里搜索时，没有任何交互效果，页面比较生硬，我们可以利用上节课学的上拉加载的那个Loading样式【导航标题出现Loading效果】，来增强体验，效果如下：
+
+![增加交互](https://upload-images.jianshu.io/upload_images/8919399-8bf4377bd2c64db9.gif?imageMogr2/auto-orient/strip)
+
+5. 本节课关于搜索的问题就讲完了，对于搜索结果只有20条数据的问题，大家可以自己去实现以下下拉加载和刷新的效果，这里就不挨着挨着说了，之前更多里面也讲了此类方法的实现。在最后呢，我发现在之前的文章详情页面里面，有一个bug，就是音乐播放完毕的时候，图标不会初始化，并且全局变量也没有修改，所以在这里，我们给文章详情页面新增一个关于音乐播放完毕的监听事件: 
+```javascript
+// 监听音乐停止，图标初始化
+wx.onBackgroundAudioStop(function(){
+  that.setData({
+    isPlaying: false
+  })
+  app.globalData.ISPLAYING = false;
+  app.globalData.MUSICID = null;
+})
+```
 
 > 后言
 
-本节知识点：
-* 下拉刷新事件`onPullDownRefresh`，切记json文件中配置下拉刷新的开关`enablePullDownRefresh`
-* 上拉加载事件`onReachBottom`
-*  Loading加载效果`wx.showNavigationBarLoading()`和关闭Loading的函数`wx.stopPullDownRefresh()`
+##### 项目源码：[demigod-liu / wechat](https://link.jianshu.com/?t=https%3A%2F%2Fgithub.com%2Fdemigod-liu%2Fwechat-mini-program)
 
-希望大家可以多练习，好好消化，下节课我们将会讲到如何根据搜索模糊查询电影！
-
-##### 项目源码：[demigod-liu / wechat](https://github.com/demigod-liu/wechat-mini-program)
 
 > 说明
 
 原创作品，禁止转载和伪原创，违者必究！
+

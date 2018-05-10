@@ -1,4 +1,5 @@
 @import "movie-list/movie-list-template.wxss";
+@import "movie-grid/movie-grid.wxss";
 .container{
     background: #f2f2f2;
 }

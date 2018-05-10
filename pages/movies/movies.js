@@ -4,12 +4,13 @@ Page({
     data: {
         containerShow: true,
         searchPanelShow: false,
-        closeImgShow: false
+        closeImgShow: false,
+        searchMovies: {}
     },
     onLoad(e) {
-        let inTheaters = app.globalData.BASEPATH + "v2/movie/in_theaters",
-            comeingSoon = app.globalData.BASEPATH + "v2/movie/coming_soon",
-            top250 = app.globalData.BASEPATH + "v2/movie/top250";
+        let inTheaters = app.globalData.BASEPATH + "v2/movie/in_theaters?count=3",
+            comeingSoon = app.globalData.BASEPATH + "v2/movie/coming_soon?count=3",
+            top250 = app.globalData.BASEPATH + "v2/movie/top250?count=3";
         this.getData(inTheaters, "inTheaters", "正在热映");
         this.getData(comeingSoon, "comeingSoon", "即将上映");
         this.getData(top250, "top250", "TOP250");
@@ -19,7 +20,6 @@ Page({
         let that = this;
         wx.request({
             url: url,
-            data: { count: 3 },
             header: { "Content-Type": "json" },
             success(res) {
                 that.processDoubanData(res.data.subjects, setKey, slogans);
@@ -44,6 +44,7 @@ Page({
                 movies: movie
             }
         });
+        wx.hideNavigationBarLoading();
     },
     onMoreTap(e){
         let categroy = e.currentTarget.dataset.categroy;
@@ -65,7 +66,10 @@ Page({
             closeImgShow: false
         })
     },
-    onBindChange(){
-
+    onSearch(e){
+        wx.showNavigationBarLoading();
+        let val = e.detail.value;
+        let searchUrl = app.globalData.BASEPATH + "v2/movie/search?q=" + val;
+        this.getData(searchUrl,'searchMovies','');
     }
 })
