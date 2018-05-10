@@ -66,5 +66,11 @@ Page({
         wx.showNavigationBarLoading();
         let requestUrl = this.data.requestUrl + "?start=" + this.data.totalCount + "&count=20";
         utils.http(requestUrl, this.precessDoubanData);
+    },
+    onMovieTap(e) {
+        let mid = e.currentTarget.dataset.mid;
+        wx.navigateTo({
+            url: '../movie-detail/movie-detail?mid=' + mid
+        })
     }
 })

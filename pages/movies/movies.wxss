@@ -25,7 +25,6 @@
 }
 .placeholader{
     color: #d1d1d1;
-    margin-left: 20rpx;
 }
 .search-panel{
     position: absolute;

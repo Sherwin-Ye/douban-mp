@@ -3,7 +3,8 @@
     "pages/movies/movies",
     "pages/talk/talk",
     "pages/talk-details/talk-details",
-    "pages/movies/more-movie/more-movie"
+    "pages/movies/more-movie/more-movie",
+    "pages/movies/movie-detail/movie-detail"
   ],
   "window": {
     "navigationBarBackgroundColor": "#d4d4d4"

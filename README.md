@@ -1,133 +1,332 @@
-# 微信小程序入门级教程-12
+# 微信小程序入门级教程-13
+
 
 > 前言
 
-&emsp;&emsp;昨天我们讲解了更多页面和其功能的实现，说的有点笼统，不过大致方向和代码都已经基本提供了，所以希望大家还是没懂的就多理解理解，练习练习，今天呢，我们就开始讲解电影页面的搜索功能！
+搜索功能做完了，本节课我们开始写电影详情的功能了~
 
 > 目录
 
 https://www.jianshu.com/p/9c9b555b52e8
 
-> 分析操作
+> 步骤
 
-1. 搜索框获取焦点后，自动弹出搜索页面，隐藏掉原有页面，并且搜索框右边出现关闭搜索的按钮。
-2. 点击关闭按钮，页面初始化，关闭按钮也随之消失
+1. `movies`文件夹下新建`movie-detail`文件，并且把对应的文件全部建好。
 
-具体操作效果：
-![交互效果](https://upload-images.jianshu.io/upload_images/8919399-5ff19eca27001b5b.gif?imageMogr2/auto-orient/strip)
-
-
-> 实现步骤
-
-1.电影页面顶部新增一个搜索栏，对于搜索栏中的搜索图标和关闭图标，有很多种办法可以解决，例如图片，又或者iconfont，又或者小程序自身的icon图标，方法有很多，怎么实现，看自己考虑了。我们这里就采取最简单的方法，直接使用小程序自身的icon，具体使用如下：
-
-|属性名|类型|默认值|说明|
-|:---|:---|:---|:---|
-|type|String||有效值：success, success_no_circle, info, warn, waiting, cancel, download, search, clear|
-|size|Number|23|icon的大小，单位px
-|color|Color||icon的颜色，同css的color
-
-举例：
-
-```wxml
-<icon type="success" size="40" color="#f00"/>
-```
+2. 在电影模板`movie-template.wxml`中给每一个电影的`view`上增加一个点击事件，并且绑定上电影的`ID`，然后在点击事件中跳转到`movie-details.wxml`页面，并且在`movie-details.js`的`onLoad`函数中获取传过来的电影`ID`，并且引入utils工具类的http函数，请求豆瓣的api接口获取电影详情，具体代码如下：
 ```javascript
+// pages/movies/movie-detail/movie-detail.js
+let utils = require("../../../utils/utils");
+let app = getApp();
 Page({
-  data: {
-    iconSize: [20, 30, 40, 50, 60, 70],
-    iconColor: [
-      'red', 'orange', 'yellow', 'green', 
-      'rgb(0,255,255)', 'blue', 'purple'
-    ],
-    iconType: [
-      'success', 'success_no_circle', 'info', 'warn', 
-      'waiting', 'cancel', 'download', 'search', 'clear'
-    ]
+  onLoad(options) {
+      let movieId = options.mid;
+      let requestUrl = app.globalData.BASEPATH + "v2/movie/subject/" + movieId;
+      utils.http(requestUrl, this.processDoubanData);
+  },
+  processDoubanData(data){
+      console.log(data)
   }
 })
 ```
-![微信API例子](https://upload-images.jianshu.io/upload_images/8919399-21662caffd1a86c8.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-2.在这里我们就开始修改`movies.wxml`文件在`.container`上方新增`view`，具体代码如下:
-```html
- <view class="search">
-    <icon type="search" class="search-img" size="14" color="#405f80" />
-    <input type="text" placeholder='唐人街探案2' 
-        placeholder-class='placeholader' bindfocus="onBindFocus"
-        bindconfirm="onSearch" />
-    // 初始化的时候将关闭按钮隐藏掉
-    // 在movies.js中定义一个变量closeImgShow，赋值false
-    <icon type="clear" class="clear-img" size="14" 
-      color="#405f80" catchtap='recover' wx-if="{{closeImgShow}}" />
-</view> 
-// 关于input的属性就自己去看API文档吧，这里不多说这个东西了
-```
-
-效果如下：
-![搜索框](https://upload-images.jianshu.io/upload_images/8919399-e26e41fe020685dc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
-
-3.继续写我们搜索的结果页面，这里我们就不用重新写页面了，因为搜索结果页面无非也是`grid`模板的内容，所以这里我们继续使用`grid`模板，所以我们直接在`movies.wxml`页面最下部新增一个`view`，具体代码如下：
-```html
-// 初始化页面的时候，搜索页面时隐藏的
-// 所以在movies.js中新增一个变量searchPanelShow， 赋值false
-<view class='search-panel' wx-if="{{searchPanelShow}}">
-    <template is="movieGridTemplate"></template>
-</view> 
-```
-
-4.开始写功能部分
-
-我们在上面可以看到，我们给输入框加了两个事件,一个是获取焦点的事件，我们刚才已经用来实现页面的隐藏和显示了，那么解下来的`confirm`呢？就是关于输入框输入内容后的点击完成事件，当然了，回车也是可以的，那么我们先在`movies.js`中写出这个函数再说，顺便通过`event.detail.value`来获取输入框的值：
+3.因为电影详情中有很多二级数据和三级数据，所以必要的判空操作还是必要的，毕竟老电影的话，很有可能内容不全，这些错误都将导致小程序报错，所以我们来优化一下数据：
 ```javascript
-onSearch(e){
-  // 获取输入框的值
-  let val = e.detail.value; 
-  // 通过api接口传入这个值进行搜索
-  let searchUrl = app.globalData.BASEPATH + "v2/movie/search?q=" + val;
-  // 使用调用接口后的处理方法，把搜索结果赋值给变量searchMovies
-  this.getData(searchUrl,'searchMovies','');
+processDoubanData(data) {
+  // 判空操作并且格式化我们需要的数据到变量movie
+  if(!data){
+    return false;
+  }
+  let director = {
+    avatar: "",
+    name: "",
+    id: ""
+  }
+  if (data.directors[0] != null) {
+    if (data.directors[0].avatars != null) {
+      director.avatar = data.directors[0].avatars.large
+    }
+    director.name = data.directors[0].name;
+    director.id = data.directors[0].id;
+  }
+  var movie = {
+    movieImg: data.images ? data.images.large : "",
+    country: data.countries[0],
+    title: data.title,
+    originalTitle: data.original_title,
+    wishCount: data.wish_count,
+    commentCount: data.comments_count,
+    year: data.year,
+    generes: data.genres.join("、"),
+    stars: utils.converToStarsArray(data.rating.stars),
+    score: data.rating.average,
+    director: director,
+    casts: utils.convertToCastString(data.casts),
+    castsInfo: utils.convertToCastInfos(data.casts),
+    summary: data.summary
+  }
+  this.setData({
+    movie: movie
+  })
 }
 ```
 
-在上面我们得到了搜索结果的一个变量，那么接下来就是在页面中填充这个值:
+4.然后我们来编写页面和页面的样式
+`movie-detail.wxml`
+```html
+<import src="../stars/stars-template.wxml" />
+<view class="container">
+    <image class="head-img" src="{{movie.movieImg}}" mode="aspectFill" />
+    <view class="head-img-hover" data-src="{{movie.movieImg}}" catchtap="viewMoviePostImg">
+        <text class="main-title">{{movie.title}}</text>
+        <text class="sub-title">{{movie.country + " · "+movie.year}}</text>
+        <view class="like">
+            <text class="highlight-font">
+        {{movie.wishCount}}
+      </text>
+            <text class="plain-font">
+        人喜欢
+      </text>
+            <text class="highlight-font">
+        {{movie.commentCount}}
+      </text>
+            <text class="plain-font">
+        条评论
+      </text>
+        </view>
+    </view>
+    <image class="movie-img" src="{{movie.movieImg}}" data-src="{{movie.movieImg}}" catchtap="viewMoviePostImg" />
+    <view class="summary">
+        <view class="original-title">
+            <text>{{movie.originalTitle}}</text>
+        </view>
+        <view class="flex-row">
+            <text class="mark">评分</text>
+            <view class="star-box">
+                <template is="starsTemplate" data="{{stars:movie.stars, score:movie.score}}" />
+            </view>
+        </view>
+        <view class="flex-row">
+            <text class="mark">导演</text>
+            <text>{{movie.director.name}}</text>
+        </view>
+        <view class="flex-row">
+            <text class="mark">影人</text>
+            <text>{{movie.casts}}</text>
+        </view>
+        <view class="flex-row">
+            <text class="mark">类型</text>
+            <text>{{movie.generes}}</text>
+        </view>
+    </view>
+    <view class="hr"></view>
+    <view class="synopsis">
+        <text class="synopsis-font">剧情简介</text>
+        <text class="summary-content">{{movie.summary}}</text>
+    </view>
+    <view class="hr"></view>
+    <view class="cast">
+        <text class="cast-font"> 影人</text>
+        <scroll-view class="cast-imgs" scroll-x="true" style="width:100%">
+            <block wx:for="{{movie.castsInfo}}" wx:for-item="item">
+                <view class="cast-container">
+                    <image class="cast-img" src="{{item.img}}"></image>
+                    <text class="cast-name">{{item.name}}</text>
+                </view>
+            </block>
+        </scroll-view>
+    </view>
+</view>
+```
+`movie-detail.wxss`
+```css
+@import "../stars/stars-template.wxss";
 
-```wxml
- <view class='search-panel' wx-if="{{searchPanelShow}}">
-    <template is="movieGridTemplate" data="{{...searchMovies}}"></template>
-</view> 
+.container {
+    display: flex;
+    flex-direction: column;
+    font-size: 26rpx;
+}
+
+.head-img {
+    width: 100%;
+    height: 320rpx;
+    -webkit-filter: blur(20px);
+}
+
+.head-img-hover {
+    width: 100%;
+    height: 320rpx;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-title {
+    font-size: 19px;
+    color: #fff;
+    font-weight: bold;
+    margin-top: 50rpx;
+    margin-left: 40rpx;
+    letter-spacing: 2px;
+}
+
+.sub-title {
+    font-size: 28rpx;
+    color: #fff;
+    margin-left: 40rpx;
+    margin-top: 30rpx;
+}
+
+.like {
+    display: flex;
+    flex-direction: row;
+    margin-top: 30rpx;
+    margin-left: 40rpx;
+}
+
+.highlight-font {
+    color: #f21146;
+    font-size: 22rpx;
+    margin-right: 10rpx;
+}
+
+.plain-font {
+    color: #666;
+    font-size: 22rpx;
+    margin-right: 30rpx;
+}
+
+.movie-img {
+    height: 238rpx;
+    width: 175rpx;
+    position: absolute;
+    top: 160rpx;
+    right: 30rpx;
+    box-shadow: 1px 1px 6px 0 #000;
+}
+
+.summary {
+    margin: 40rpx;
+    margin-bottom: 0;
+    color: #777;
+}
+
+.original-title {
+    color: #1f3463;
+    font-size: 24rpx;
+    font-weight: bold;
+    margin-bottom: 40rpx;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 10rpx;
+}
+
+.mark {
+    margin-right: 30rpx;
+    white-space: nowrap;
+    color: #999;
+}
+
+.star-box {
+    margin-top: -5rpx;
+}
+
+.hr {
+    margin-top: 45rpx;
+    height: 1px;
+    width: 100%;
+    border-bottom: 1px dashed #d9d9d9;
+}
+
+.synopsis {
+    margin-left: 40rpx;
+    display: flex;
+    flex-direction: column;
+    margin-top: 50rpx;
+}
+
+.synopsis-font {
+    color: #999;
+}
+
+.summary-content {
+    margin-top: 20rpx;
+    margin-right: 40rpx;
+    line-height: 40rpx;
+    letter-spacing: 1px;
+}
+
+.cast {
+    margin: 0 40rpx;
+    display: flex;
+    flex-direction: column;
+    margin-top: 50rpx;
+}
+
+.cast-font {
+    color: #999;
+    margin-bottom: 40rpx;
+}
+
+.cast-container {
+    display: inline-flex;
+    flex-direction: column;
+    margin-bottom: 50rpx;
+    margin-right: 40rpx;
+    width: 160rpx;
+    text-align: center;
+    white-space: normal;
+}
+
+.cast-imgs {
+    white-space: nowrap;
+}
+
+.cast-img {
+    width: 160rpx;
+    height: 210rpx;
+}
+
+.cast-name {
+    margin: 10rpx auto;
+}
+
 ```
 
-###### 注意：
+看一下效果吧：
 
-* 如果这里搜索出来只有三条数据，那么请把`movies.js`中的`getData`函数中传入的count=3删除，为了保持原有效果不变，可以在`onLoad`函数中，把初始化页面的三次请求路径后面，直接以问号传参的方式传入count=3
+![最终效果图](https://upload-images.jianshu.io/upload_images/8919399-8083cffbd9d1b894.gif?imageMogr2/auto-orient/strip)
 
-* 如果页面中样式有问题，请在`movies.wxss`中引入我们使用grid模板的样式文件即可。
+5. 但是我们会发现，如果我们进入了更多页面，那么点击电影，就不会跳转到详情页面，是因为在`more-movie.js`中。我们并没有`onMovieTap`函数，所以我们把`movies.js`中的`onMovieTap`函数复制到`more-movie.js`中即可在更多页面里，也可以调整到详情页面。
 
-搜索效果：![搜索效果](https://upload-images.jianshu.io/upload_images/8919399-0ebe2f1b67179436.gif?imageMogr2/auto-orient/strip)
-
-###### 优化：
-
-&emsp;&emsp;在这里搜索时，没有任何交互效果，页面比较生硬，我们可以利用上节课学的上拉加载的那个Loading样式【导航标题出现Loading效果】，来增强体验，效果如下：
-
-![增加交互](https://upload-images.jianshu.io/upload_images/8919399-8bf4377bd2c64db9.gif?imageMogr2/auto-orient/strip)
-
-5. 本节课关于搜索的问题就讲完了，对于搜索结果只有20条数据的问题，大家可以自己去实现以下下拉加载和刷新的效果，这里就不挨着挨着说了，之前更多里面也讲了此类方法的实现。在最后呢，我发现在之前的文章详情页面里面，有一个bug，就是音乐播放完毕的时候，图标不会初始化，并且全局变量也没有修改，所以在这里，我们给文章详情页面新增一个关于音乐播放完毕的监听事件: 
+6.最后我们再给电影封面加一个预览的功能，就是点击详情页封面图和背景图，可以预览一下大图，即实现页面中的`viewMoviePostImg`函数：
+`movie-detail.js`
 ```javascript
-// 监听音乐停止，图标初始化
-wx.onBackgroundAudioStop(function(){
-  that.setData({
-    isPlaying: false
+viewMoviePostImg: function (e) {
+  var src = e.currentTarget.dataset.src;
+  // 小程序预览的方法
+  wx.previewImage({
+    current: src, // 图片路径
+    urls: [src] // 图片相册的数组
   })
-  app.globalData.ISPLAYING = false;
-  app.globalData.MUSICID = null;
-})
+}
 ```
+
+效果如下：
+
+![预览效果](https://upload-images.jianshu.io/upload_images/8919399-cff7c77d7b488f3c.gif?imageMogr2/auto-orient/strip)
 
 > 后言
 
-##### 项目源码：[demigod-liu / wechat](https://link.jianshu.com/?t=https%3A%2F%2Fgithub.com%2Fdemigod-liu%2Fwechat-mini-program)
+&emsp;&emsp;到最后呢，大体内容我们就学习的差不多的，剩下的就是自己优化小程序和随着小程序API的更新换代，自己可以继续实时的优化小程序，谢谢大家
 
+##### 项目源码：[demigod-liu / douban-movies](https://link.jianshu.com/?t=https%3A%2F%2Fgithub.com%2Fdemigod-liu%2Fdouban-movies)
 
 > 说明
 

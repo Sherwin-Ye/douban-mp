@@ -46,30 +46,36 @@ Page({
         });
         wx.hideNavigationBarLoading();
     },
-    onMoreTap(e){
+    onMoreTap(e) {
         let categroy = e.currentTarget.dataset.categroy;
         wx.navigateTo({
             url: 'more-movie/more-movie?categroy=' + categroy,
         })
     },
-    onBindFocus(){
+    onBindFocus() {
         this.setData({
             containerShow: false,
             searchPanelShow: true,
             closeImgShow: true
         })
     },
-    recover(){
+    recover() {
         this.setData({
             containerShow: true,
             searchPanelShow: false,
             closeImgShow: false
         })
     },
-    onSearch(e){
+    onSearch(e) {
         wx.showNavigationBarLoading();
         let val = e.detail.value;
-        let searchUrl = app.globalData.BASEPATH + "v2/movie/search?q=" + val;
-        this.getData(searchUrl,'searchMovies','');
+        let searchUrl = app.globalData.BASEPATH + "v2/movie/search?count=50&q=" + val;
+        this.getData(searchUrl, 'searchMovies', '');
+    },
+    onMovieTap(e) {
+        let mid = e.currentTarget.dataset.mid;
+        wx.navigateTo({
+            url: 'movie-detail/movie-detail?mid=' + mid
+        })
     }
 })
